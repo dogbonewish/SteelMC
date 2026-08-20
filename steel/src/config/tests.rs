@@ -71,6 +71,29 @@ fn packaged_schema_declares_server_thread_settings() {
     assert!(thread_properties.contains_key("chunk_encoding"));
 }
 
+#[test]
+fn packaged_schema_accepts_zero_simulation_distance() {
+    let config_toml = DEFAULT_CONFIG.replace("simulation_distance = 10", "simulation_distance = 0");
+    let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
+
+    validate(&config.server).expect("zero simulation distance validates");
+    assert_eq!(config.server.simulation_distance, 0);
+
+    let Ok(schema) = serde_json::from_str::<serde_json::Value>(include_str!(
+        "../../../package-content/config.schema.json"
+    )) else {
+        panic!("packaged config schema should be valid JSON");
+    };
+    let Some(simulation_distance) =
+        schema.pointer("/properties/server/properties/simulation_distance")
+    else {
+        panic!("packaged config schema should define simulation_distance");
+    };
+
+    assert_eq!(simulation_distance["minimum"], 0);
+    assert_eq!(simulation_distance["default"], 10);
+}
+
 #[tokio::test]
 async fn file_permission_group_store_round_trips_typed_config() {
     let root = temp_config_root("groups-store");
