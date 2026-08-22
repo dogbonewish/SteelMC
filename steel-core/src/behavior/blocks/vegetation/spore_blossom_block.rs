@@ -14,6 +14,9 @@ use crate::world::{LevelReader, ScheduledTickAccess};
 use super::{BlockRef, default_surviving_state};
 
 /// Vanilla `SporeBlossomBlock` survival and support updates.
+///
+/// Vanilla's ambient spores come from client-local `animateTick`; there is no
+/// server-side particle work for this block.
 #[block_behavior]
 pub struct SporeBlossomBlock {
     block: BlockRef,
