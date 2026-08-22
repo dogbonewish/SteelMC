@@ -69,13 +69,13 @@ use crate::{
     vanilla_biomes, vanilla_block_entity_types, vanilla_block_tags, vanilla_blocks,
     vanilla_cat_sound_variants, vanilla_cat_variants, vanilla_chat_types,
     vanilla_chicken_sound_variants, vanilla_chicken_variants, vanilla_configured_carvers,
-    vanilla_configured_features, vanilla_cow_sound_variants, vanilla_cow_variants,
-    vanilla_damage_type_tags, vanilla_damage_types, vanilla_dialog_tags, vanilla_dialogs,
-    vanilla_dimension_types, vanilla_enchantment_tags, vanilla_enchantments, vanilla_entities,
-    vanilla_entity_type_tags, vanilla_fluid_tags, vanilla_fluids, vanilla_frog_variants,
-    vanilla_game_events, vanilla_game_rules, vanilla_instrument_tags, vanilla_instruments,
-    vanilla_item_tags, vanilla_items, vanilla_jukebox_songs, vanilla_loot_tables,
-    vanilla_map_decoration_types, vanilla_menu_types, vanilla_mob_effects,
+    vanilla_configured_feature_tags, vanilla_configured_features, vanilla_cow_sound_variants,
+    vanilla_cow_variants, vanilla_damage_type_tags, vanilla_damage_types, vanilla_dialog_tags,
+    vanilla_dialogs, vanilla_dimension_types, vanilla_enchantment_tags, vanilla_enchantments,
+    vanilla_entities, vanilla_entity_type_tags, vanilla_fluid_tags, vanilla_fluids,
+    vanilla_frog_variants, vanilla_game_events, vanilla_game_rules, vanilla_instrument_tags,
+    vanilla_instruments, vanilla_item_tags, vanilla_items, vanilla_jukebox_songs,
+    vanilla_loot_tables, vanilla_map_decoration_types, vanilla_menu_types, vanilla_mob_effects,
     vanilla_painting_variant_tags, vanilla_painting_variants, vanilla_particle_types,
     vanilla_pig_sound_variants, vanilla_pig_variants, vanilla_placed_features,
     vanilla_poi_type_tags, vanilla_poi_types, vanilla_position_source_types, vanilla_potion_tags,
@@ -404,6 +404,9 @@ impl Registry {
 
         vanilla_configured_carvers::register_configured_carvers(&mut registry.configured_carvers);
         vanilla_configured_features::register_configured_features(
+            &mut registry.configured_features,
+        );
+        vanilla_configured_feature_tags::ConfiguredFeatureTag::register_configured_feature_tags(
             &mut registry.configured_features,
         );
         vanilla_placed_features::register_placed_features(&mut registry.placed_features);

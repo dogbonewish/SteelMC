@@ -5,9 +5,10 @@ use simdnbt::ToNbtTag;
 use simdnbt::owned::NbtTag;
 use steel_utils::Identifier;
 
-use crate::TaggedRegistryExt;
+use crate::feature::{ConfiguredFeature, ConfiguredFeatureRef};
 use crate::sound_event::SoundEventRef;
-use crate::{REGISTRY, RegistryTags};
+use crate::{REGISTRY, RegistryTags, vanilla_configured_feature_tags};
+use crate::{RegistryExt, TaggedRegistryExt};
 
 #[derive(Debug)]
 pub struct Biome {
@@ -30,6 +31,49 @@ impl Biome {
     /// Returns `true` if this biome is tagged with the given tag.
     pub fn has_tag(&'static self, tag: &Identifier) -> bool {
         REGISTRY.biomes.is_in_tag(self, tag)
+    }
+
+    /// Returns the configured features vanilla allows bonemeal to select in this biome.
+    pub fn bone_meal_features(&'static self) -> Vec<&'static ConfiguredFeature> {
+        self.features
+            .iter()
+            .flat_map(|stage| stage.iter())
+            .filter_map(|key| REGISTRY.placed_features.by_key(key))
+            .filter_map(|placed| match &placed.data.feature {
+                ConfiguredFeatureRef::Reference(feature) => Some(*feature),
+                ConfiguredFeatureRef::Inline(_) => None,
+            })
+            .filter(|feature| {
+                REGISTRY.configured_features.is_in_tag(
+                    *feature,
+                    &vanilla_configured_feature_tags::ConfiguredFeatureTag::CAN_SPAWN_FROM_BONE_MEAL,
+                )
+            })
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use steel_utils::Identifier;
+
+    use super::*;
+    use crate::{RegistryExt, init_vanilla_registry};
+
+    #[test]
+    fn plains_bone_meal_features_follow_the_extracted_tag() {
+        init_vanilla_registry();
+        let plains = REGISTRY
+            .biomes
+            .by_key(&Identifier::vanilla_static("plains"))
+            .expect("vanilla plains biome");
+
+        assert!(
+            plains
+                .bone_meal_features()
+                .iter()
+                .any(|feature| feature.key == Identifier::vanilla_static("flower_plain"))
+        );
     }
 }
 

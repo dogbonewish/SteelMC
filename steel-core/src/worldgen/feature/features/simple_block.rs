@@ -1,8 +1,66 @@
+use std::sync::Arc;
+
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
 use crate::behavior::blocks::MossyCarpetBlock;
+use crate::world::World;
 
 impl FeatureDecorationRunner {
+    pub(crate) fn place_simple_block_feature_live(
+        world: &Arc<World>,
+        registry: &Registry,
+        random: &mut WorldgenRandom,
+        config: &SimpleBlockConfiguration,
+        origin: BlockPos,
+    ) -> bool {
+        let Some(state_to_place) = Self::sample_block_state_provider_optional(
+            world.as_ref(),
+            registry,
+            random,
+            &config.to_place,
+            origin,
+        ) else {
+            return false;
+        };
+        let behavior = BLOCK_BEHAVIORS.get_behavior(state_to_place.get_block());
+        if !behavior.can_survive(state_to_place, world.as_ref(), origin) {
+            return false;
+        }
+
+        if Self::is_double_plant_block(state_to_place.get_block()) {
+            if !world.get_block_state(origin.above()).is_air() {
+                return false;
+            }
+            let lower_state = state_to_place.set_value(
+                &BlockStateProperties::DOUBLE_BLOCK_HALF,
+                DoubleBlockHalf::Lower,
+            );
+            let upper_state = state_to_place.set_value(
+                &BlockStateProperties::DOUBLE_BLOCK_HALF,
+                DoubleBlockHalf::Upper,
+            );
+            world.set_block(origin, lower_state, UpdateFlags::UPDATE_CLIENTS);
+            world.set_block(origin.above(), upper_state, UpdateFlags::UPDATE_CLIENTS);
+        } else if state_to_place.get_block() == &vanilla_blocks::PALE_MOSS_CARPET {
+            let state = MossyCarpetBlock::updated_state(
+                vanilla_blocks::PALE_MOSS_CARPET.default_state(),
+                world.as_ref(),
+                origin,
+                true,
+            );
+            world.set_block(origin, state, UpdateFlags::UPDATE_CLIENTS);
+        } else {
+            world.set_block(origin, state_to_place, UpdateFlags::UPDATE_CLIENTS);
+        }
+
+        if config.schedule_tick {
+            let placed_state = world.get_block_state(origin);
+            world.schedule_block_tick_default(origin, placed_state.get_block(), 1);
+        }
+
+        true
+    }
+
     pub(in crate::worldgen::feature) fn place_simple_block_feature(
         region: &mut WorldGenRegion<'_>,
         registry: &Registry,

@@ -8,6 +8,8 @@ use std::sync::OnceLock;
 use rustc_hash::FxHashMap;
 use steel_utils::Identifier;
 
+use crate::registry::RegistryTags;
+
 pub mod data;
 
 pub use data::*;
@@ -30,6 +32,7 @@ pub type ConfiguredFeatureEntryRef = &'static ConfiguredFeature;
 pub struct ConfiguredFeatureRegistry {
     features_by_id: Vec<ConfiguredFeatureEntryRef>,
     features_by_key: FxHashMap<Identifier, usize>,
+    tags: RegistryTags,
     allows_registering: bool,
 }
 
@@ -40,6 +43,7 @@ impl ConfiguredFeatureRegistry {
         Self {
             features_by_id: Vec::new(),
             features_by_key: FxHashMap::default(),
+            tags: RegistryTags::default(),
             allows_registering: true,
         }
     }
@@ -81,6 +85,11 @@ crate::impl_registry_ext!(
     ConfiguredFeature,
     features_by_id,
     features_by_key
+);
+crate::impl_tagged_registry!(
+    ConfiguredFeatureRegistry,
+    features_by_key,
+    "configured feature"
 );
 
 crate::impl_registry_entry_eq!(ConfiguredFeature);

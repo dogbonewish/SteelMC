@@ -125,6 +125,17 @@ pub fn build_simple_tags(
     registry_module: &str,
     registry_type: &str,
 ) -> TokenStream {
+    build_simple_tags_with_tag_name(tag_subdir, registry_module, registry_type, registry_module)
+}
+
+/// Builds tags whose source directory and generated category name differ from
+/// the Rust module containing the tagged registry.
+pub fn build_simple_tags_with_tag_name(
+    tag_subdir: &str,
+    registry_module: &str,
+    registry_type: &str,
+    tag_name: &str,
+) -> TokenStream {
     let tag_dir =
         format!("../steel-utils/build_assets/builtin_datapacks/minecraft/tags/{tag_subdir}");
     println!("cargo:rerun-if-changed={tag_dir}");
@@ -134,12 +145,9 @@ pub fn build_simple_tags(
 
     let registry_module_ident = Ident::new(registry_module, Span::call_site());
     let registry_type_ident = Ident::new(registry_type, Span::call_site());
-    let register_fn_ident = Ident::new(
-        &format!("register_{registry_module}_tags"),
-        Span::call_site(),
-    );
+    let register_fn_ident = Ident::new(&format!("register_{tag_name}_tags"), Span::call_site());
     let tag_category_ident = Ident::new(
-        &format!("{}Tag", registry_module.to_upper_camel_case()),
+        &format!("{}Tag", tag_name.to_upper_camel_case()),
         Span::call_site(),
     );
 

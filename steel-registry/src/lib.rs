@@ -474,5 +474,10 @@ pub mod vanilla_configured_features;
 
 #[expect(warnings)]
 #[rustfmt::skip]
+#[path = "generated/vanilla_configured_feature_tags.rs"]
+pub mod vanilla_configured_feature_tags;
+
+#[expect(warnings)]
+#[rustfmt::skip]
 #[path = "generated/vanilla_placed_features.rs"]
 pub mod vanilla_placed_features;

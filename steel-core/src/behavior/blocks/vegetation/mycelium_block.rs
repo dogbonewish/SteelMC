@@ -1,30 +1,33 @@
+use std::sync::Arc;
+
 use steel_macros::block_behavior;
-use steel_registry::blocks::BlockRef;
+use steel_registry::{blocks::BlockRef, vanilla_blocks};
 use steel_utils::{BlockPos, BlockStateId, Direction};
 
-use super::snowy_block::{snowy_placement_state, update_snowy_shape};
+use super::spreading_snowy_block::SpreadingSnowyBlock;
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::context::BlockPlaceContext;
-use crate::world::ScheduledTickAccess;
+use crate::world::{ScheduledTickAccess, World};
 
 /// Behavior for mycelium blocks.
-// TODO: Implement SpreadingSnowyBlock random ticks (spreading, turning to dirt when covered).
 #[block_behavior]
 pub struct MyceliumBlock {
-    block: BlockRef,
+    spreading: SpreadingSnowyBlock,
 }
 
 impl MyceliumBlock {
     /// Creates a new mycelium block behavior.
     #[must_use]
     pub const fn new(block: BlockRef) -> Self {
-        Self { block }
+        Self {
+            spreading: SpreadingSnowyBlock::new(block, &vanilla_blocks::DIRT),
+        }
     }
 }
 
 impl BlockBehavior for MyceliumBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        Some(snowy_placement_state(self.block, context))
+        Some(self.spreading.get_state_for_placement(context))
     }
 
     fn update_shape(
@@ -36,7 +39,11 @@ impl BlockBehavior for MyceliumBlock {
         _neighbor_pos: BlockPos,
         neighbor_state: BlockStateId,
     ) -> BlockStateId {
-        update_snowy_shape(state, direction, neighbor_state)
+        SpreadingSnowyBlock::update_shape(state, direction, neighbor_state)
+    }
+
+    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        self.spreading.random_tick(state, world, pos);
     }
 }
 

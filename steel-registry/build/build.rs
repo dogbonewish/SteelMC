@@ -160,6 +160,7 @@ const TEMPLATE_POOLS: &str = "template_pools";
 const WORLD_CLOCKS: &str = "world_clocks";
 const CARVERS: &str = "configured_carvers";
 const CONFIGURED_FEATURES: &str = "configured_features";
+const CONFIGURED_FEATURE_TAGS: &str = "configured_feature_tags";
 const PLACED_FEATURES: &str = "placed_features";
 
 pub fn main() {
@@ -248,6 +249,7 @@ pub fn main() {
         (enchantments::build(), ENCHANTMENTS),
         (carvers::build(), CARVERS),
         (features::build_configured(), CONFIGURED_FEATURES),
+        (tags::configured_feature(), CONFIGURED_FEATURE_TAGS),
         (features::build_placed(), PLACED_FEATURES),
     ];
 

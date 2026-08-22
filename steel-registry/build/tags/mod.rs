@@ -2,12 +2,14 @@
 
 mod block;
 mod common;
+mod configured_feature;
 mod fluid;
 mod item;
 
 use proc_macro2::TokenStream;
 
 pub(crate) use block::build as block;
+pub(crate) use configured_feature::build as configured_feature;
 pub(crate) use fluid::build as fluid;
 pub(crate) use item::build as item;
 
