@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::particle_type::{ParticleData, TrailParticleOption};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_tags::BlockTag;
@@ -70,6 +71,20 @@ impl EyeblossomType {
         match self {
             Self::Open => RgbColor::new(16_545_810),
             Self::Closed => RgbColor::new(6_250_335),
+        }
+    }
+
+    pub(crate) const fn bee_effect(self) -> MobEffectRef {
+        match self {
+            Self::Open => &vanilla_mob_effects::BLINDNESS,
+            Self::Closed => &vanilla_mob_effects::NAUSEA,
+        }
+    }
+
+    pub(crate) const fn bee_effect_duration(self) -> i32 {
+        match self {
+            Self::Open => 220,
+            Self::Closed => 140,
         }
     }
 
@@ -185,7 +200,7 @@ impl BlockBehavior for EyeblossomBlock {
 
     fn entity_inside(
         &self,
-        _state: BlockStateId,
+        state: BlockStateId,
         world: &Arc<World>,
         _pos: BlockPos,
         entity: &dyn Entity,
@@ -193,7 +208,7 @@ impl BlockBehavior for EyeblossomBlock {
         _is_precise: bool,
     ) {
         if world.difficulty() == Difficulty::Peaceful
-            || self.eyeblossom_type != EyeblossomType::Open
+            || !state.get_block().has_tag(&BlockTag::BEE_ATTRACTIVE)
             || entity.entity_type() != &vanilla_entities::BEE
         {
             return;
@@ -206,8 +221,8 @@ impl BlockBehavior for EyeblossomBlock {
             return;
         }
         living_entity.add_mob_effect(MobEffectInstance::with_duration(
-            vanilla_mob_effects::POISON,
-            25,
+            self.eyeblossom_type.bee_effect(),
+            self.eyeblossom_type.bee_effect_duration(),
             0,
         ));
     }

@@ -117,7 +117,6 @@ pub use crop_block::CropBlock;
 pub use dirt_path_block::DirtPathBlock;
 pub use double_plant_block::DoublePlantBlock;
 pub use dry_vegetation_block::DryVegetationBlock;
-pub(crate) use eyeblossom_block::EYEBLOSSOM_OPEN_ATTRIBUTE;
 pub use eyeblossom_block::{EyeblossomBlock, EyeblossomType};
 pub use farmland_block::FarmlandBlock;
 pub use firefly_bush_block::FireflyBushBlock;
