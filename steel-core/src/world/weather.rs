@@ -257,6 +257,17 @@ impl World {
         environment::sun_angle_degrees(self.dimension_type, level_data.world_clocks())
     }
 
+    /// Returns a boolean environment attribute at the world's current timeline position.
+    pub(crate) fn environment_bool_attribute(&self, attribute: &str, default: bool) -> bool {
+        let level_data = self.level_data.read();
+        environment::bool_attribute(
+            default,
+            self.dimension_type,
+            level_data.world_clocks(),
+            attribute,
+        )
+    }
+
     /// Returns sky-layer light after the current sky darkening is subtracted.
     ///
     /// Mirrors vanilla `LevelReader.getEffectiveSkyBrightness` without allowing

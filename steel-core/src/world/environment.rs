@@ -55,6 +55,16 @@ pub(super) fn sun_angle_degrees(
 }
 
 #[must_use]
+pub(super) fn bool_attribute(
+    default_value: bool,
+    dimension_type: DimensionTypeRef,
+    clock_manager: &WorldClockManager,
+    attribute: &str,
+) -> bool {
+    apply_timeline_bool_attribute(default_value, dimension_type, clock_manager, attribute)
+}
+
+#[must_use]
 pub(super) fn sky_darkening(sky_light_level: f32) -> u8 {
     (MAX_SKY_LIGHT_LEVEL - sky_light_level.clamp(MIN_SKY_LIGHT_LEVEL, MAX_SKY_LIGHT_LEVEL)) as u8
 }
@@ -107,6 +117,93 @@ fn apply_timeline_float_track(
         None => sample,
         _ => value,
     }
+}
+
+fn apply_timeline_bool_attribute(
+    mut value: bool,
+    dimension_type: DimensionTypeRef,
+    clock_manager: &WorldClockManager,
+    attribute: &str,
+) -> bool {
+    let Some(timelines) = dimension_type.timelines else {
+        return value;
+    };
+    if let Some(tag) = timelines.strip_prefix('#') {
+        let Ok(tag) = Identifier::from_str(tag) else {
+            return value;
+        };
+        for timeline in REGISTRY.timelines.iter_tag(&tag) {
+            value = apply_timeline_bool_track(value, timeline, clock_manager, attribute);
+        }
+        return value;
+    }
+
+    let Ok(key) = Identifier::from_str(timelines) else {
+        return value;
+    };
+    REGISTRY.timelines.by_key(&key).map_or(value, |timeline| {
+        apply_timeline_bool_track(value, timeline, clock_manager, attribute)
+    })
+}
+
+fn apply_timeline_bool_track(
+    value: bool,
+    timeline: TimelineRef,
+    clock_manager: &WorldClockManager,
+    attribute: &str,
+) -> bool {
+    let Some(track) = timeline.tracks.iter().find(|track| track.name == attribute) else {
+        return value;
+    };
+    let Some(total_ticks) = clock_manager.total_ticks(timeline.clock) else {
+        return value;
+    };
+    let Some(sample) = sample_bool_track(track, timeline.period_ticks.map(i64::from), total_ticks)
+    else {
+        return value;
+    };
+
+    match track.modifier {
+        Some("and") => value && sample,
+        Some("nand") => !sample || !value,
+        Some("or") => value || sample,
+        Some("nor") => !value && !sample,
+        Some("xor") => value ^ sample,
+        Some("xnor") => value == sample,
+        None => sample,
+        _ => value,
+    }
+}
+
+fn sample_bool_track(track: &Track, period_ticks: Option<i64>, ticks: i64) -> Option<bool> {
+    let keyframes = track.keyframes;
+    match keyframes.len() {
+        0 => return None,
+        1 => return keyframe_bool_value(&keyframes[0].value),
+        _ => {}
+    }
+
+    let sample_ticks = period_ticks.map_or(ticks, |period| ticks.rem_euclid(period));
+    let first = &keyframes[0];
+    let last = &keyframes[keyframes.len() - 1];
+
+    if period_ticks.is_some() && sample_ticks < first.ticks {
+        return keyframe_bool_value(&last.value);
+    }
+
+    for segment in keyframes.windows(2) {
+        let from = &segment[0];
+        let to = &segment[1];
+        if sample_ticks < to.ticks {
+            return keyframe_bool_value(&from.value);
+        }
+    }
+
+    if period_ticks.is_some() {
+        return keyframe_bool_value(&last.value);
+    }
+
+    keyframe_bool_value(&last.value)
 }
 
 fn sample_float_track(track: &Track, period_ticks: Option<i64>, ticks: i64) -> Option<f32> {
@@ -273,6 +370,13 @@ const fn keyframe_float_value(value: &KeyframeValue) -> Option<f32> {
     }
 }
 
+const fn keyframe_bool_value(value: &KeyframeValue) -> Option<bool> {
+    match value {
+        KeyframeValue::Bool(value) => Some(*value),
+        _ => None,
+    }
+}
+
 fn apply_weather_sky_light_level(mut value: f32, rain_level: f32, thunder_level: f32) -> f32 {
     let thunder_level = thunder_level.clamp(0.0, 1.0);
     let rain_level = (rain_level - thunder_level).clamp(0.0, 1.0);
@@ -306,6 +410,7 @@ mod tests {
     const OVERWORLD_SUNSET_TICKS: i64 = 12_000;
     const OVERWORLD_SUNSET_INTERPOLATION_TICKS: i64 = 12_768;
     const OVERWORLD_MIDNIGHT_TICKS: i64 = 18_000;
+    const EYEBLOSSOM_OPEN_ATTRIBUTE: &str = "minecraft:gameplay/eyeblossom_open";
 
     fn assert_f32_close(left: f32, right: f32) {
         assert!(
@@ -440,5 +545,35 @@ mod tests {
         assert_eq!(sky_darkening(15.0), 0);
         assert_eq!(sky_darkening(11.5625), 3);
         assert_eq!(sky_darkening(4.0), 11);
+    }
+
+    #[test]
+    fn overworld_eyeblossom_open_attribute_uses_constant_keyframes() {
+        init_vanilla_registry();
+
+        assert!(!bool_attribute(
+            false,
+            &OVERWORLD,
+            &clock_manager_at(12_599),
+            EYEBLOSSOM_OPEN_ATTRIBUTE,
+        ));
+        assert!(bool_attribute(
+            false,
+            &OVERWORLD,
+            &clock_manager_at(12_600),
+            EYEBLOSSOM_OPEN_ATTRIBUTE,
+        ));
+        assert!(bool_attribute(
+            false,
+            &OVERWORLD,
+            &clock_manager_at(23_400),
+            EYEBLOSSOM_OPEN_ATTRIBUTE,
+        ));
+        assert!(!bool_attribute(
+            false,
+            &OVERWORLD,
+            &clock_manager_at(23_401),
+            EYEBLOSSOM_OPEN_ATTRIBUTE,
+        ));
     }
 }
